@@ -1,0 +1,23 @@
+# FileFlux Telegram File Converter Bot — Dependencies
+
+# Telegram bot framework
+python-telegram-bot==21.6
+
+# Image processing
+Pillow>=10.0.0
+img2pdf>=0.5.1
+
+# PDF handling
+pypdf>=4.0.0
+pdfminer.six>=20221105
+reportlab>=4.0.0
+
+# Document handling
+python-docx>=1.1.0
+openpyxl>=3.1.0
+
+# ffmpeg-python (video/audio conversion uses subprocess ffmpeg directly)
+# Make sure ffmpeg is installed on your system:
+#   Ubuntu/Debian: sudo apt install ffmpeg
+#   macOS:         brew install ffmpeg
+#   Windows:       https://ffmpeg.org/download.html
