@@ -38,7 +38,7 @@ level=logging.INFO,
 )
 logger = logging.getLogger(**name**)
 
-BOT_TOKEN = os.environ.get(“BOT_TOKEN”, “YOUR_BOT_TOKEN_HERE”)
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 
 TEMP_DIR = Path(tempfile.gettempdir()) / “fileflux”
 TEMP_DIR.mkdir(exist_ok=True)
