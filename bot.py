@@ -516,6 +516,8 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             ext = out_path.suffix.lower()
             if file_type == "image" and ext != ".pdf":
                 await query.message.reply_photo(photo=f, caption=caption, parse_mode=ParseMode.MARKDOWN)
+            elif "note" in out_path.stem:
+                await query.message.reply_video_note(video_note=f)
             elif file_type == "video" and ext in (".mp4", ".mov", ".webm"):
                 await query.message.reply_video(video=f, caption=caption, parse_mode=ParseMode.MARKDOWN)
             elif file_type == "audio" and ext in (".mp3", ".ogg", ".m4a", ".aac"):
