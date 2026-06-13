@@ -81,6 +81,7 @@ def format_buttons(file_type):
         buttons.append([InlineKeyboardButton("📐 Resize", callback_data="tool:resize"), InlineKeyboardButton("🗜 Compress", callback_data="tool:compress")])
     if file_type == "video":
         buttons.append([InlineKeyboardButton("✂️ Trim", callback_data="tool:trim"), InlineKeyboardButton("🔇 Mute", callback_data="tool:mute"), InlineKeyboardButton("🖼 Thumbnail", callback_data="tool:thumbnail")])
+    if file_type == "video" or file_type == "audio":
         buttons.append([InlineKeyboardButton("🗜 Compress", callback_data="tool:compress"), InlineKeyboardButton("📊 File Info", callback_data="tool:info")])
     if file_type == "audio":
         buttons.append([InlineKeyboardButton("📊 File Info", callback_data="tool:info")])
@@ -88,6 +89,7 @@ def format_buttons(file_type):
         buttons.append([InlineKeyboardButton("📝 Merge PDFs", callback_data="tool:merge_pdf")])
     buttons.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel")])
     return InlineKeyboardMarkup(buttons)
+
 def get_file_info(src):
     cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", str(src)]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -153,6 +155,114 @@ def convert_video(src, target_fmt, out_dir):
     if fmt == "GIF":
         out = out_dir / (src.stem + ".gif")
         cmd = ["ffmpeg", "-y", "-i", str(src), "-vf", "fps=10,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse", "-loop", "0", str(out)]
+        subprocess.run(cmd, check=True, capture_output=True)
+        return out
+    
+    ext_map = {"MP4": "mp4", "AVI": "avi", "MKV": "mkv", "MOV": "mov", "WEBM": "webm", "FLV": "flv"}
+    audio_formats = {"MP3": "mp3", "AAC": "aac", "WAV": "wav"}
+    
+    if fmt in audio_formats:
+        out = out_dir / (src.stem + "." + audio_formats[fmt])
+        cmd = ["ffmpeg", "-y", "-i", str(src), "-q:a", "0", "-map", "a", str(out)]
+        subprocess.run(cmd, check=True, capture_output=True)
+        return out
+    
+    ext = ext_map.get(fmt, fmt.lower())
+    out = out_dir / (src.stem + "." + ext)
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-preset", "medium", "-c:a", "aac", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def trim_video(src, start_time, end_time, out_dir):
+    out = out_dir / (src.stem + "_trimmed.mp4")
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-ss", start_time, "-to", end_time, "-c:v", "libx264", "-preset", "medium", "-c:a", "aac", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def mute_video(src, out_dir):
+    out = out_dir / (src.stem + "_muted.mp4")
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "copy", "-an", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def extract_thumbnail(src, timestamp, out_dir):
+    out = out_dir / (src.stem + "_thumb.jpg")
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-ss", timestamp, "-vframes", "1", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def compress_video(src, out_dir):
+    out = out_dir / (src.stem + "_compressed.mp4")
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-crf", "28", "-preset", "medium", "-c:a", "aac", "-b:a", "128k", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def convert_audio(src, target_fmt, out_dir):
+    fmt = target_fmt.upper()
+    ext_map = {"MP3": "mp3", "WAV": "wav", "AAC": "aac", "OGG": "ogg", "FLAC": "flac", "M4A": "m4a", "OPUS": "opus"}
+    ext = ext_map.get(fmt, fmt.lower())
+    out = out_dir / (src.stem + "." + ext)
+    cmd = ["ffmpeg", "-y", "-i", str(src), "-q:a", "0", str(out)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return out
+
+def convert_doc(src, target_fmt, out_dir):
+    fmt = target_fmt.upper()
+    
+    if fmt == "PDF":
+        out = out_dir / (src.stem + ".pdf")
+        if src.suffix.lower() == ".docx":
+            doc = Document(src)
+            pdf_doc = SimpleDocTemplate(str(out), pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    elements.append(Paragraph(para.text, styles["Normal"]))
+                    elements.append(Spacer(1, 12))
+            pdf_doc.build(elements)
+        else:
+            with open(src, "r", encoding="utf-8") as f:
+                text = f.read()
+            pdf_doc = SimpleDocTemplate(str(out), pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = [Paragraph(text, styles["Normal"])]
+            pdf_doc.build(elements)
+        return out
+    
+    if fmt == "TXT":
+        out = out_dir / (src.stem + ".txt")
+        if src.suffix.lower() == ".docx":
+            doc = Document(src)
+            with open(out, "w", encoding="utf-8") as f:
+                for para in doc.paragraphs:
+                    f.write(para.text + "\n")
+        else:
+            shutil.copy(src, out)
+        return out
+    
+    if fmt == "DOCX":
+        out = out_dir / (src.stem + ".docx")
+        doc = Document()
+        if src.suffix.lower() == ".txt":
+            with open(src, "r", encoding="utf-8") as f:
+                doc.add_paragraph(f.read())
+        doc.save(out)
+        return out
+    
+    raise ValueError(f"Unsupported doc format: {fmt}")
+
+def merge_pdfs(pdf_files, out_dir):
+    out = out_dir / "merged.pdf"
+    writer = PdfWriter()
+    for pdf_file in pdf_files:
+        reader = PdfReader(pdf_file)
+        for page in reader.pages:
+            writer.add_page(page)
+    with open(out, "wb") as f:
+        writer.write(f)
+    return out
+
 async def cmd_start(update, ctx):
     text = (
         "🤖 *Welcome to FileFlux v2!*\n\n"
@@ -200,6 +310,7 @@ async def cmd_formats(update, ctx):
         "📄 *Docs:* PDF TXT DOCX → PDF TXT DOCX\n"
     )
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
 async def handle_file(update, ctx):
     msg = update.message
     uid = update.effective_user.id
@@ -328,8 +439,8 @@ async def handle_text(update, ctx):
         except Exception:
             await update.message.reply_text("❌ Send a number between 1 and 100.")
         return
-      
-jasync def run_tool(msg, ctx, uid, tool_name):
+
+async def run_tool(msg, ctx, uid, tool_name):
     file_id = ctx.user_data.get("file_id")
     filename = ctx.user_data.get("filename", "file")
     file_type = ctx.user_data.get("file_type")
@@ -411,6 +522,7 @@ jasync def run_tool(msg, ctx, uid, tool_name):
     finally:
         cleanup(uid)
         ctx.user_data.clear()
+
 async def handle_callback(update, ctx):
     query = update.callback_query
     await query.answer()
