@@ -152,7 +152,7 @@ def convert_video(src, target_fmt, out_dir):
     fmt = target_fmt.upper()
     if fmt == "GIF":
         out = out_dir / (src.stem + ".gif")
-        cmd = ["ffmpeg", "-y", "-i", str(src), "-vf", "fps=10,scale=480:-1:flags=lanczos,​​​​​​​​​​​​​​​​
+        cmd = ["ffmpeg", "-y", "-i", str(src), "-vf", "fps=10,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse", "-loop", "0", str(out)]
 async def cmd_start(update, ctx):
     text = (
         "🤖 *Welcome to FileFlux v2!*\n\n"
