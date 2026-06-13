@@ -167,6 +167,20 @@ def convert_video(src: Path, target_fmt: str, out_dir: Path) -> Path:
         subprocess.run(cmd, check=True, capture_output=True)
         return out
 
+    # Video → Video Note (circular)
+    if fmt == "VIDNOTE":
+        out = out_dir / (src.stem + "_note.mp4")
+        cmd = [
+            "ffmpeg", "-y", "-i", str(src),
+            "-t", "60",
+            "-vf", "crop=min(iw\\,ih):min(iw\\,ih),scale=384:384",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+            "-c:a", "aac", "-b:a", "64k",
+            str(out)
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
+        return out
+
     # Video → audio extraction
     if fmt in ("MP3", "AAC", "WAV", "OGG", "FLAC", "M4A", "OPUS"):
         return convert_audio(src, fmt, out_dir)
