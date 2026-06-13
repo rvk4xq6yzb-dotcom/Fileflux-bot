@@ -1,9 +1,3 @@
-“””
-FileFlux Telegram Bot v2
-Full-featured file converter with image, video, audio, document conversion,
-trimming, compression, thumbnail extraction, PDF merging, file info, and more.
-“””
-
 import os
 import logging
 import asyncio
