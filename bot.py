@@ -1,10 +1,3 @@
-import os
-import subprocess
-subprocess.run(["pip", "install", "--quiet", "ffmpeg-python"], check=False)
-os.system("apt-get install -y ffmpeg 2>/dev/null || true")
-"""
-FileFlux Telegram Bot
-A powerful file converter bot supporting images, videos, audio, documents and more.
 """
 
 import os
