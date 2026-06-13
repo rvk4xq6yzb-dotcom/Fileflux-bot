@@ -48,7 +48,7 @@ TEMP_DIR.mkdir(exist_ok=True)
 
 # ─── Conversion maps ──────────────────────────────────────────────────────────
 IMAGE_FORMATS = ["JPEG", "PNG", "WEBP", "BMP", "GIF", "TIFF", "ICO", "PDF"]
-VIDEO_FORMATS = ["MP4", "AVI", "MKV", "MOV", "WEBM", "GIF", "MP3", "AAC", "WAV"]
+VIDEO_FORMATS = ["MP4", "AVI", "MKV", "MOV", "WEBM", "GIF", "MP3", "AAC", "WAV", "VIDNOTE"]
 AUDIO_FORMATS = ["MP3", "WAV", "AAC", "OGG", "FLAC", "M4A", "OPUS"]
 DOC_FORMATS   = ["PDF", "TXT", "DOCX"]
 
