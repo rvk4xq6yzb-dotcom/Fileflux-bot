@@ -152,24 +152,40 @@ def compress_image(src, quality, out_dir):
 
 def convert_video(src, target_fmt, out_dir):
     fmt = target_fmt.upper()
+    
+    # Video to GIF conversion
     if fmt == "GIF":
         out = out_dir / (src.stem + ".gif")
         cmd = ["ffmpeg", "-y", "-i", str(src), "-vf", "fps=10,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse", "-loop", "0", str(out)]
         subprocess.run(cmd, check=True, capture_output=True)
         return out
     
-    ext_map = {"MP4": "mp4", "AVI": "avi", "MKV": "mkv", "MOV": "mov", "WEBM": "webm", "FLV": "flv"}
+    # Audio extraction formats (video to audio)
     audio_formats = {"MP3": "mp3", "AAC": "aac", "WAV": "wav"}
-    
     if fmt in audio_formats:
         out = out_dir / (src.stem + "." + audio_formats[fmt])
         cmd = ["ffmpeg", "-y", "-i", str(src), "-q:a", "0", "-map", "a", str(out)]
         subprocess.run(cmd, check=True, capture_output=True)
         return out
     
-    ext = ext_map.get(fmt, fmt.lower())
+    # Video format conversions
+    video_ext_map = {"MP4": "mp4", "AVI": "avi", "MKV": "mkv", "MOV": "mov", "WEBM": "webm", "FLV": "flv", "VIDNOTE": "mp4"}
+    
+    if fmt not in video_ext_map:
+        raise ValueError(f"Unsupported video format: {fmt}")
+    
+    ext = video_ext_map[fmt]
     out = out_dir / (src.stem + "." + ext)
-    cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-preset", "medium", "-c:a", "aac", str(out)]
+    
+    # Use appropriate codecs based on output format
+    if fmt == "WEBM":
+        cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libvpx-vp9", "-preset", "medium", "-c:a", "libopus", str(out)]
+    elif fmt == "MOV":
+        cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-preset", "medium", "-c:a", "aac", str(out)]
+    else:
+        # MP4, AVI, MKV, FLV, VIDNOTE
+        cmd = ["ffmpeg", "-y", "-i", str(src), "-c:v", "libx264", "-preset", "medium", "-c:a", "aac", str(out)]
+    
     subprocess.run(cmd, check=True, capture_output=True)
     return out
 
